@@ -4,6 +4,7 @@ import bcrypt
 import pandas as pd
 import joblib
 from catboost import CatBoostClassifier
+import numpy as np
 
 # --- Database Functions ---
 def create_users_table():
@@ -60,6 +61,8 @@ if menu == "Signup":
             st.error("Username already exists.")
 
 elif menu == "Login":
+    # label_encoders = joblib.load("label_encoders.pkl")
+    # st.write("Encoder classes for 'Paperless Billing':", label_encoders['Offer'].classes_)
     st.subheader("Login to your account")
     username = st.text_input("Username")
     password = st.text_input("Password", type='password')
@@ -177,122 +180,133 @@ if st.session_state.get('logged_in'):
         st.markdown("Enter customer details below:")
 
         with st.form("prediction_form"):
-            gender = st.selectbox("Gender", ['Male', 'Female'])
-            age = st.number_input("Age", min_value=0, max_value=120)
-            senior_citizen = st.selectbox("Senior Citizen", ['Yes', 'No'])
-            married = st.selectbox("Married", ['Yes', 'No'])
-            dependents = st.selectbox("Dependents", ['Yes', 'No'])
-            num_dependents = st.number_input("Number of Dependents", min_value=0, max_value=10)
-            under_30 = st.selectbox("Under 30", ["Yes", "No"])
-            partner = st.selectbox("Partner", ["Yes", "No"])
-
-            monthly_charge = st.number_input("Monthly Charge", min_value=0.0)
-            total_charges = st.number_input("Total Charges", min_value=0.0)
-            total_refunds = st.number_input("Total Refunds", min_value=0.0)
-            total_long_distance_charges = st.number_input("Total Long Distance Charges", min_value=0.0)
-            total_extra_data_charges = st.number_input("Total Extra Data Charges", min_value=0.0)
-            avg_monthly_gb_download = st.number_input("Avg Monthly GB Download", min_value=0.0)
-            avg_monthly_long_distance_charges = st.number_input("Avg Monthly Long Distance Charges", min_value=0.0)
-
+            gender = st.selectbox("Gender", ['Male', 'Female'], index=0)
+            age = st.number_input("Age", min_value=0, max_value=120, value=35)
+            
+            # Removed senior_citizen, under_30, partner as they're not in the specified features
+            
+            married = st.selectbox("Married", ['Yes', 'No'], index=0)
+            dependents = st.selectbox("Dependents", ['Yes', 'No'], index=0)
+            num_dependents = st.number_input("Number of Dependents", min_value=0, max_value=10, value=0)
+            
+            monthly_charge = st.number_input("Monthly Charge", min_value=0.0, value=65.0)
+            total_charges = st.number_input("Total Charges", min_value=0.0, value=2000.0)
+            total_refunds = st.number_input("Total Refunds", min_value=0.0, value=0.0)
+            total_long_distance_charges = st.number_input("Total Long Distance Charges", min_value=0.0, value=50.0)
+            total_extra_data_charges = st.number_input("Total Extra Data Charges", min_value=0.0, value=0.0)
+            avg_monthly_gb_download = st.number_input("Avg Monthly GB Download", min_value=0.0, value=25.0)
+            avg_monthly_long_distance_charges = st.number_input("Avg Monthly Long Distance Charges", min_value=0.0, value=10.0)
+            
             payment_method = st.selectbox("Payment Method", [
-                'Bank transfer (automatic)',
-                'Credit card (automatic)',
-                'Electronic check',
-                'Mailed check'
-            ])
-            paperless_billing = st.selectbox("Paperless Billing", ['Yes', 'No'])
-
-            city = st.text_input("City", "Los Angeles")
+                'Credit Card',
+                'Bank Withdrawal',
+                'Mailed Check'
+            ], index=2)
+            paperless_billing = st.selectbox("Paperless Billing", ['Yes', 'No'], index=0)
+            
+            # Removed city, country, zip_code, latitude, longitude as they're not in the specified features
             state = st.text_input("State", "California")
-            country = st.text_input("Country", "United States")
-            zip_code = st.text_input("Zip Code", "90001")
-            latitude = st.number_input("Latitude", value=34.05)
-            longitude = st.number_input("Longitude", value=-118.24)
-            population = st.number_input("Population", min_value=0, value=10000)
-
-            referred = st.selectbox("Referred a Friend", ["Yes", "No"])
-            num_referrals = st.number_input("Number of Referrals", min_value=0)
+            
+            # Removed population as it's not in the specified features
+            
+            num_referrals = st.number_input("Number of Referrals", min_value=0, value=0)
             offer = st.selectbox("Offer", [
                 "None", "Offer A", "Offer B", "Offer C", "Offer D", "Offer E"
-            ])
-            contract = st.selectbox("Contract", ['Month-to-month', 'One year', 'Two year'])
-            tenure_months = st.number_input("Tenure in Months", min_value=0)
-            quarter = st.selectbox("Quarter", ["Q1", "Q2", "Q3", "Q4"])
-
-            phone_service = st.selectbox("Phone Service", ["Yes", "No"])
-            multiple_lines = st.selectbox("Multiple Lines", ["Yes", "No", "No phone service"])
-            internet_service = st.selectbox("Internet Service", ['DSL', 'Fiber optic', 'No'])
-            internet_type = st.selectbox("Internet Type", ["Cable", "DSL", "Fiber Optic", "No"])
-            streaming_tv = st.selectbox("Streaming TV", ["Yes", "No"])
-            streaming_movies = st.selectbox("Streaming Movies", ["Yes", "No"])
-            streaming_music = st.selectbox("Streaming Music", ["Yes", "No"])
-            online_security = st.selectbox("Online Security", ["Yes", "No"])
-            online_backup = st.selectbox("Online Backup", ["Yes", "No"])
-            device_protection = st.selectbox("Device Protection Plan", ["Yes", "No"])
-            premium_support = st.selectbox("Premium Tech Support", ["Yes", "No"])
-            unlimited_data = st.selectbox("Unlimited Data", ["Yes", "No"])
+            ], index=0)
+            contract = st.selectbox("Contract", ['Month-to-Month', 'One Year', 'Two Year'], index=0)
+            tenure_months = st.number_input("Tenure in Months", min_value=0, value=12)
+            
+            # Removed quarter as it's not in the specified features
+            
+            phone_service = st.selectbox("Phone Service", ["Yes", "No"], index=0)
+            multiple_lines = st.selectbox("Multiple Lines", ["Yes", "No", "No phone service"], index=0)
+            internet_service = st.selectbox("Internet Service", ['Yes', 'No'], index=1)
+            internet_type = st.selectbox("Internet Type", ["Cable", "DSL", "Fiber Optic", ], index=2)
+            
+            streaming_tv = st.selectbox("Streaming TV", ["Yes", "No"], index=0)
+            streaming_movies = st.selectbox("Streaming Movies", ["Yes", "No"], index=0)
+            streaming_music = st.selectbox("Streaming Music", ["Yes", "No"], index=0)
+            
+            online_security = st.selectbox("Online Security", ["Yes", "No"], index=0)
+            online_backup = st.selectbox("Online Backup", ["Yes", "No"], index=0)
+            device_protection = st.selectbox("Device Protection Plan", ["Yes", "No"], index=0)
+            premium_support = st.selectbox("Premium Tech Support", ["Yes", "No"], index=0)
+            unlimited_data = st.selectbox("Unlimited Data", ["Yes", "No"], index=0)
+            
+            # Added CLTV and Total Revenue which were in the specified features but missing from form
+            cltv = st.number_input("CLTV (Customer Lifetime Value)", min_value=0, value=3000)
+            total_revenue = st.number_input("Total Revenue", min_value=0.0, value=2500.0)
 
             submit = st.form_submit_button("Predict")
 
+        binary_mapping = {
+            "Yes": 1,
+            "No": 0
+        }
+
         if submit:
             features = {
-                "gender": gender,
-                "age": age,
-                "senior_citizen": senior_citizen,
-                "married": married,
-                "dependents": dependents,
-                "num_dependents": num_dependents,
-                "under_30": under_30,
-                "partner": partner,
-                "monthly_charge": monthly_charge,
-                "total_charges": total_charges,
-                "total_refunds": total_refunds,
-                "total_long_distance_charges": total_long_distance_charges,
-                "total_extra_data_charges": total_extra_data_charges,
-                "avg_monthly_gb_download": avg_monthly_gb_download,
-                "avg_monthly_long_distance_charges": avg_monthly_long_distance_charges,
-                "payment_method": payment_method,
-                "paperless_billing": paperless_billing,
-                "city": city,
-                "state": state,
-                "country": country,
-                "zip_code": zip_code,
-                "latitude": latitude,
-                "longitude": longitude,
-                "population": population,
-                "referred": referred,
-                "num_referrals": num_referrals,
-                "offer": offer,
-                "contract": contract,
-                "tenure_months": tenure_months,
-                "quarter": quarter,
-                "phone_service": phone_service,
-                "multiple_lines": multiple_lines,
-                "internet_service": internet_service,
-                "internet_type": internet_type,
-                "streaming_tv": streaming_tv,
-                "streaming_movies": streaming_movies,
-                "streaming_music": streaming_music,
-                "online_security": online_security,
-                "online_backup": online_backup,
-                "device_protection": device_protection,
-                "premium_support": premium_support,
-                "unlimited_data": unlimited_data
+                "Age": age,
+                "Avg Monthly GB Download": avg_monthly_gb_download,
+                "Avg Monthly Long Distance Charges": avg_monthly_long_distance_charges,
+                "CLTV": cltv,
+                "Contract": contract,
+                "Dependents": binary_mapping.get(dependents, 0),
+                "Device Protection Plan": binary_mapping.get(device_protection, 0),
+                "Gender": gender,
+                "Internet Service": binary_mapping.get(internet_service, 0),
+                "Internet Type": internet_type,
+                "Married": binary_mapping.get(married, 0),
+                "Monthly Charge": monthly_charge,
+                "Multiple Lines": binary_mapping.get(multiple_lines, 0),
+                "Number of Dependents": num_dependents,
+                "Number of Referrals": num_referrals,
+                "Offer": None if offer == "None" else offer,
+                "Online Backup": binary_mapping.get(online_backup, 0),
+                "Online Security": binary_mapping.get(online_security, 0),
+                "Paperless Billing": binary_mapping.get(paperless_billing, 0),
+                "Payment Method": payment_method,
+                "Phone Service": binary_mapping.get(phone_service, 0),
+                "Premium Tech Support": binary_mapping.get(premium_support, 0),
+                "State": state,
+                "Streaming Movies": binary_mapping.get(streaming_movies, 0),
+                "Streaming Music": binary_mapping.get(streaming_music, 0),
+                "Streaming TV": binary_mapping.get(streaming_tv, 0),
+                "Tenure in Months": tenure_months,
+                "Total Charges": total_charges,
+                "Total Extra Data Charges": total_extra_data_charges,
+                "Total Long Distance Charges": total_long_distance_charges,
+                "Total Refunds": total_refunds,
+                "Total Revenue": total_revenue,
+                "Unlimited Data": binary_mapping.get(unlimited_data, 0)
             }
 
             input_df = pd.DataFrame([features])
-            input_df = pd.get_dummies(input_df)
 
-            model = CatBoostClassifier()
-            model.load_model("catboost_churn_model.cbm")
-            scaler = joblib.load("scaler.pkl")
-            model_columns = joblib.load("model_features.pkl")
+            # Load Random Forest model and label encoders
+            model = joblib.load("rf_model.pkl")
+            label_encoders = joblib.load("label_encoders.pkl")
+            model_columns = joblib.load("model_features.pkl")  
 
+            # Align input features
             input_df = input_df.reindex(columns=model_columns, fill_value=0)
-            input_scaled = scaler.transform(input_df)
 
-            prediction = model.predict(input_scaled)[0]
-            prediction_proba = model.predict_proba(input_scaled)[0][1]
+            # Safe transformation with error handling
+            for col in label_encoders:
+                if col in input_df.columns:
+                    try:
+                        input_df[col] = input_df[col].astype(str).replace('None', np.nan)
+                        # Only transform non-null values
+                        mask = input_df[col].notna()
+                        if mask.any():
+                            input_df.loc[mask, col] = label_encoders[col].transform(input_df.loc[mask, col])
+                    except ValueError as e:
+                        st.error(f"Encoding failed for column '{col}': {e}")
+                        st.stop()
+
+            # Predict
+            prediction = model.predict(input_df)[0]
+            prediction_proba = model.predict_proba(input_df)[0][1]
 
             st.success(f"Prediction: {'Churn' if prediction == 1 else 'No Churn'}")
             st.info(f"Churn Probability: {prediction_proba:.2f}")
